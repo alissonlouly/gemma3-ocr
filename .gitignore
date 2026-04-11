@@ -1,0 +1,37 @@
+# Ignore arquivos de ambiente e segredos
+.env
+.env.*
+
+# Bytecode Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtualenv
+.venv/
+venv/
+ENV/
+
+# Streamlit cache
+.streamlit/
+
+# VSCode
+.vscode/
+
+# Arquivos temporários
+*.log
+*.tmp
+*.bak
+
+# MacOS
+.DS_Store
+
+# Linux
+*~
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Outros
+*.swp
+*.swo
