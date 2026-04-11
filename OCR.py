@@ -44,11 +44,12 @@ with st.sidebar:
     if imagem_upada:
         st.image(imagem_upada, caption="Imagem carregada", use_column_width=True)
         iniciar_ocr = st.button("🔍 Iniciar OCR")
-        if st.button("🗑️ Limpar Resultado"):
-            st.session_state.pop('resultado_ocr', None)
-            st.session_state.pop('texto_ocr', None)
-            st.session_state.pop('resultado_correcao', None)
-            st.experimental_rerun()
+    if st.button("🗑️ Limpar Resultado"):
+        st.session_state.pop('resultado_ocr', None)
+        st.session_state.pop('texto_ocr', None)
+        st.session_state.pop('resultado_correcao', None)
+        st.session_state.pop('file_uploader', None)
+        st.experimental_rerun()
 
 # Função para OCR com modelo vision da OpenAI
 def ocr_gemini(image_bytes):
@@ -68,19 +69,19 @@ def corrigir_redacao_enem(texto_redacao):
     client = openai.OpenAI(api_key=api_key)
     prompt = f"""
 <role>
-Você é um corretor oficial de redações do ENEM com 15 anos de experiência, profundo conhecimento da Cartilha do Participante do ENEM e dos critérios oficiais do INEP. Sua correção é rigorosa, justa e didática.
+Você é um corretor oficial de redações do ENEM com 15 anos de experiência, profundo conhecimento da Cartilha do Participante do ENEM e dos critérios oficiais do INEP. Sua avaliação é técnica, objetiva e estritamente alinhada ao espelho de correção oficial do INEP. Você não tem medo de atribuir a nota máxima (200) em cada competência se o texto cumprir os requisitos da cartilha. Sua correção é justa e didática.
 </role>
 
 <task>
-Corrija a redação abaixo avaliando cada uma das 5 competências do ENEM. Para cada competência, atribua uma nota seguindo obrigatoriamente os níveis oficiais (0, 40, 80, 120, 160 ou 200) e justifique com exemplos extraídos do próprio texto.
+Corrija a redação abaixo avaliando cada uma das 5 competências do ENEM. Para cada competência, analise os elementos exigidos, liste as evidências do texto e, SOMENTE COMO CONCLUSÃO da sua análise, atribua uma nota seguindo obrigatoriamente os níveis oficiais (0, 40, 80, 120, 160 ou 200).
 </task>
 
 <competencias>
-- **Competência 1 – Domínio da norma culta:** Avalie ortografia, acentuação, morfossintaxe, regência, concordância e pontuação. Cite trechos com erros e corrija-os.
-- **Competência 2 – Compreensão da proposta e aplicação de repertório:** Avalie se o participante compreendeu o tema, não fugiu da proposta, e se utilizou repertório sociocultural produtivo e legitimamente articulado ao tema.
+- **Competência 1 – Domínio da norma culta:** Avalie ortografia, acentuação, morfossintaxe, regência, concordância e pontuação. Cite trechos com erros e corrija-os. Lembre-se que a nota máxima (200) admite até dois desvios menores.
+- **Competência 2 – Compreensão da proposta e aplicação de repertório:** Avalie se o participante compreendeu o tema, não fugiu da proposta, e se utilizou repertório sociocultural produtivo e legitimamente articulado ao tema. Se houver repertório legitimado, pertinente e produtivo, a nota máxima (200) deve ser atribuída.
 - **Competência 3 – Organização e interpretação de informações:** Avalie a coerência e progressão temática. Verifique se há tese clara, argumentos bem desenvolvidos e ausência de contradições.
-- **Competência 4 – Mecanismos de coesão:** Avalie o uso de conectivos, pronomes, conjunções e outros recursos coesivos. Identifique rupturas ou repetições desnecessárias.
-- **Competência 5 – Proposta de intervenção:** Avalie se a proposta é detalhada, respeita os direitos humanos e contém os 5 elementos obrigatórios: agente, ação, modo/meio, efeito e detalhamento.
+- **Competência 4 – Mecanismos de coesão:** Avalie o uso de conectivos, pronomes, conjunções e outros recursos coesivos. Identifique rupturas ou repetições desnecessárias. Presença expressiva de coesão intra e interparágrafos justifica a nota 200.
+- **Competência 5 – Proposta de intervenção:** Avalie se a proposta é detalhada, respeita os direitos humanos e contém os 5 elementos obrigatórios: agente, ação, modo/meio, efeito e detalhamento. Se os 5 elementos estiverem claros e explícitos, a nota é obrigatoriamente 200.
 </competencias>
 
 <output_format>
@@ -89,34 +90,34 @@ Responda estritamente neste formato Markdown:
 ## Correção da Redação
 
 ### Competência 1 – Domínio da Norma Culta
-**Nota: [0/40/80/120/160/200]**
-**Justificativa:** [análise detalhada]
-**Erros encontrados:** [cite trechos e corrija]
+**Erros encontrados:** [cite trechos com erros e corrija-os. Lembre-se: até 2 desvios menores ainda permitem nota 200]
+**Análise:** [justifique o nível de domínio da norma padrão com base no texto]
 **Sugestão de melhoria:** [orientação prática]
+**Nota Final C1:** [0/40/80/120/160/200]
 
 ### Competência 2 – Compreensão da Proposta e Repertório
-**Nota: [0/40/80/120/160/200]**
-**Justificativa:** [análise detalhada]
-**Repertório utilizado:** [avalie qualidade e pertinência]
+**Repertório utilizado:** [identifique o repertório e avalie se é legitimado, pertinente e produtivo]
+**Análise:** [justifique detalhadamente como o tema foi abordado]
 **Sugestão de melhoria:** [orientação prática]
+**Nota Final C2:** [0/40/80/120/160/200]
 
 ### Competência 3 – Organização e Argumentação
-**Nota: [0/40/80/120/160/200]**
-**Justificativa:** [análise detalhada]
-**Estrutura identificada:** [tese / argumentos / conclusão]
+**Estrutura identificada:** [descreva o projeto de texto: tese / argumentos / conclusão]
+**Análise:** [avalie a progressão temática e desenvolvimento dos argumentos]
 **Sugestão de melhoria:** [orientação prática]
+**Nota Final C3:** [0/40/80/120/160/200]
 
 ### Competência 4 – Coesão Textual
-**Nota: [0/40/80/120/160/200]**
-**Justificativa:** [análise detalhada]
-**Recursos coesivos encontrados:** [liste os usados]
+**Recursos coesivos encontrados:** [liste os principais conectivos intra e interparágrafos usados, apontando repetições se houver]
+**Análise:** [avalie a fluidez e a articulação entre as partes do texto]
 **Sugestão de melhoria:** [orientação prática]
+**Nota Final C4:** [0/40/80/120/160/200]
 
 ### Competência 5 – Proposta de Intervenção
-**Nota: [0/40/80/120/160/200]**
-**Justificativa:** [análise detalhada]
-**Elementos presentes:** [marque ✅ ou ❌ para cada um dos 5 elementos]
+**Elementos presentes:** [marque ✅ ou ❌ para: Agente, Ação, Modo/Meio, Efeito e Detalhamento]
+**Análise:** [justifique a viabilidade e a presença dos elementos]
 **Sugestão de melhoria:** [orientação prática]
+**Nota Final C5:** [0/40/80/120/160/200]
 
 ---
 
@@ -138,6 +139,7 @@ Responda estritamente neste formato Markdown:
 <constraints>
 - As notas devem ser OBRIGATORIAMENTE um dos valores oficiais: 0, 40, 80, 120, 160 ou 200.
 - Nunca atribua nota fora desses valores.
+- A nota 200 na Competência 1 não exige perfeição absoluta. O INEP admite até 2 (dois) desvios pontuais se o texto demonstrar excelente domínio geral. Não penalize a nota máxima por erros mínimos e isolados.
 - Se a redação fugir completamente do tema, a Competência 2 recebe nota 0 e as demais recebem no máximo 40.
 - Se houver menos de 7 linhas, aplique as penalidades oficiais do INEP.
 - Se houver desrespeito aos direitos humanos, a Competência 5 recebe nota 0.
@@ -151,7 +153,7 @@ Responda estritamente neste formato Markdown:
     response = client.chat.completions.create(
         model=language_model,
         messages=[{"role": "user", "content": prompt}],
-        max_tokens=2048
+        max_completion_tokens=5000
     )
     return response.choices[0].message.content
 
