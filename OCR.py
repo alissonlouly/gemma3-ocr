@@ -1,72 +1,85 @@
 import streamlit as st
-import openai
+import google.generativeai as genai
 from dotenv import load_dotenv
 import os
 from PIL import Image
 import base64
-import google.generativeai as genai
+import requests
 
 load_dotenv()
-# Configuração inicial da página
+
+# ── Configuração da página ────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="OCR com Gemma-3",
-    page_icon="🖼️",
+    page_title="Corretor de Redação ENEM",
+    page_icon="📝",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-
-
-# Função para carregar e converter imagem do logo em base64 (de URL)
-import requests
+# ── Logo ──────────────────────────────────────────────────────────────────────
 def carregar_logo_url(url):
     response = requests.get(url)
     return base64.b64encode(response.content).decode()
 
-
-# Exibir título customizado com logo (usando imagem online)
 logo_url = "https://escolaweb.educacao.al.gov.br/uploads/01879b1d-b890-426b-af27-3d5d0b3bb2e4.jpg"
 logo_base64 = carregar_logo_url(logo_url)
 st.markdown(
     f"""
-    <h1><img src='data:image/jpeg;base64,{logo_base64}' width="50" style="vertical-align: -12px;"> OCR Inteligente</h1>
+    <h1><img src='data:image/jpeg;base64,{logo_base64}' width="50" style="vertical-align: -12px;">
+    Corretor de Redação ENEM</h1>
     """,
     unsafe_allow_html=True
 )
-
-st.write("Extraia textos de imagens utilizando a tecnologia do modelo **Gemma-3 Vision**.")
+st.write("Envie a foto da redação manuscrita para extração e correção automática pelas **5 competências do ENEM**.")
 st.divider()
 
-# Sidebar com upload e botões
+# ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.subheader("📤 Envie sua imagem")
-    imagem_upada = st.file_uploader("Selecione uma imagem (PNG, JPG, JPEG)", type=["png", "jpg", "jpeg"])
-    if imagem_upada:
-        st.image(imagem_upada, caption="Imagem carregada", use_column_width=True)
-        iniciar_ocr = st.button("🔍 Iniciar OCR")
-    if st.button("🗑️ Limpar Resultado"):
-        st.session_state.pop('resultado_ocr', None)
-        st.session_state.pop('texto_ocr', None)
-        st.session_state.pop('resultado_correcao', None)
-        st.session_state.pop('file_uploader', None)
-        st.experimental_rerun()
+    imagem_upada = st.file_uploader(
+        "Selecione uma imagem (PNG, JPG, JPEG)",
+        type=["png", "jpg", "jpeg"],
+        key="file_uploader"
+    )
 
-# Função para OCR com modelo vision da OpenAI
-def ocr_gemini(image_bytes):
+    if imagem_upada:
+        st.image(imagem_upada, caption="Imagem carregada", use_container_width=True)
+        iniciar_ocr = st.button("🔍 Iniciar OCR", use_container_width=True, type="primary")
+    else:
+        iniciar_ocr = False
+
+    st.divider()
+
+    # Botão limpar — reseta tudo via query params para forçar reload limpo
+    if st.button("🗑️ Limpar tudo", use_container_width=True):
+        for chave in ["resultado_ocr", "texto_ocr", "resultado_correcao"]:
+            st.session_state.pop(chave, None)
+        st.rerun()
+
+    st.divider()
+    st.caption("📌 Modelos em uso:\n\n🔍 **OCR:** Gemini 2.5 Flash\n\n✍️ **Correção:** Gemini 2.5 Flash")
+
+
+# ── Funções ───────────────────────────────────────────────────────────────────
+
+def ocr_gemini(image_bytes: bytes) -> str:
+    """Extrai texto manuscrito da imagem usando Gemini 2.5 Flash."""
     genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    model = genai.GenerativeModel("gemini-2.5-flash")
     image = {"mime_type": "image/jpeg", "data": image_bytes}
     response = model.generate_content([
-        "Extraia todo o texto manuscrito da imagem. Apenas o texto, sem comentários.",
+        "Extraia todo o texto manuscrito da imagem com fidelidade máxima. "
+        "Retorne apenas o texto extraído, sem comentários ou formatação adicional.",
         image
     ])
     return response.text
 
-# Função para correção de redação ENEM
-def corrigir_redacao_enem(texto_redacao):
-    api_key = os.getenv("OPENAI_API_KEY")
-    language_model = os.getenv("LANGUAGE_MODEL", "gpt-5.4-mini-2026-03-17")
-    client = openai.OpenAI(api_key=api_key)
+
+def corrigir_redacao_enem(texto_redacao: str) -> str:
+    """Corrige a redação pelas 5 competências do ENEM usando Gemini 2.5 Flash."""
+    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+    model = genai.GenerativeModel("gemini-2.5-flash")
+
     prompt = f"""
 <role>
 Você é um corretor oficial de redações do ENEM com 15 anos de experiência, profundo conhecimento da Cartilha do Participante do ENEM e dos critérios oficiais do INEP. Sua avaliação é técnica, objetiva e estritamente alinhada ao espelho de correção oficial do INEP. Você não tem medo de atribuir a nota máxima (200) em cada competência se o texto cumprir os requisitos da cartilha. Sua correção é justa e didática.
@@ -150,38 +163,44 @@ Responda estritamente neste formato Markdown:
 {texto_redacao}
 </essay>
 """
-    response = client.chat.completions.create(
-        model=language_model,
-        messages=[{"role": "user", "content": prompt}],
-        max_completion_tokens=5000
-    )
-    return response.choices[0].message.content
+    response = model.generate_content(prompt)
+    return response.text
 
-# Processamento do OCR se botão for clicado
+
+# ── Processamento OCR ─────────────────────────────────────────────────────────
 if imagem_upada and iniciar_ocr:
-    with st.spinner("🔄 Analisando imagem, aguarde..."):
-        texto_ocr = ocr_gemini(imagem_upada.getvalue())
-        st.session_state['texto_ocr'] = texto_ocr
-        st.session_state['resultado_ocr'] = f"### Texto extraído da imagem\n\n{texto_ocr}"
+    with st.spinner("🔄 Extraindo texto da imagem, aguarde..."):
+        try:
+            texto_ocr = ocr_gemini(imagem_upada.getvalue())
+            st.session_state["texto_ocr"] = texto_ocr
+            st.session_state["resultado_ocr"] = f"### Texto extraído da imagem\n\n{texto_ocr}"
+            # Limpa correção anterior se existir
+            st.session_state.pop("resultado_correcao", None)
+        except Exception as e:
+            st.error(f"❌ Erro no OCR: {e}")
 
-# Botão para corrigir redação
-if 'texto_ocr' in st.session_state:
-    if st.button("✍️ Corrigir Redação ENEM"):
-        with st.spinner("Corrigindo redação, aguarde..."):
-            resultado_correcao = corrigir_redacao_enem(st.session_state['texto_ocr'])
-            st.session_state['resultado_correcao'] = resultado_correcao
+# ── Botão de correção ─────────────────────────────────────────────────────────
+if "texto_ocr" in st.session_state:
+    if st.button("✍️ Corrigir Redação ENEM", type="primary"):
+        with st.spinner("📝 Corrigindo redação, aguarde..."):
+            try:
+                resultado_correcao = corrigir_redacao_enem(st.session_state["texto_ocr"])
+                st.session_state["resultado_correcao"] = resultado_correcao
+            except Exception as e:
+                st.error(f"❌ Erro na correção: {e}")
 
-# Exibição dos resultados
-st.subheader("📄 Resultado do OCR")
-if 'resultado_ocr' in st.session_state:
-    st.markdown(st.session_state['resultado_ocr'], unsafe_allow_html=True)
+# ── Exibição dos resultados ───────────────────────────────────────────────────
+st.subheader("📄 Texto Extraído (OCR)")
+if "resultado_ocr" in st.session_state:
+    st.markdown(st.session_state["resultado_ocr"], unsafe_allow_html=True)
 else:
-    st.info("Envie uma imagem e clique em 'Iniciar OCR' para ver o resultado aqui.")
+    st.info("Envie uma imagem e clique em **Iniciar OCR** para ver o resultado aqui.")
 
-if 'resultado_correcao' in st.session_state:
+if "resultado_correcao" in st.session_state:
+    st.divider()
     st.subheader("✅ Correção da Redação ENEM")
-    st.markdown(st.session_state['resultado_correcao'], unsafe_allow_html=True)
+    st.markdown(st.session_state["resultado_correcao"], unsafe_allow_html=True)
 
-# Rodapé simplificado
+# ── Rodapé ────────────────────────────────────────────────────────────────────
 st.divider()
-st.caption("🚀 Desenvolvido com ❤️ utilizando o modelo OpenAI Vision + GPT-4o")
+st.caption("📝 Corretor ENEM — OCR e correção com Gemini 2.5 Flash")
