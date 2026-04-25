@@ -1,12 +1,7 @@
 import streamlit as st
 import google.generativeai as genai
-from dotenv import load_dotenv
-import os
-from PIL import Image
 import base64
 import requests
-
-load_dotenv()
 
 # ── Configuração da página ────────────────────────────────────────────────────
 st.set_page_config(
@@ -15,6 +10,9 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+if "gemini_api_key" not in st.session_state:
+    st.session_state["gemini_api_key"] = ""
 
 # ── Logo ──────────────────────────────────────────────────────────────────────
 def carregar_logo_url(url):
@@ -33,8 +31,31 @@ st.markdown(
 st.write("Envie a foto da redação manuscrita para extração e correção automática pelas **5 competências do ENEM**.")
 st.divider()
 
+
+def obter_api_key_gemini() -> str:
+    api_key = st.session_state.get("gemini_api_key", "").strip()
+    if not api_key:
+        raise ValueError("Informe sua API key do Gemini na barra lateral para usar o app.")
+    return api_key
+
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
+    st.subheader("🔑 Configuração do Gemini")
+    st.text_input(
+        "API key do Gemini",
+        type="password",
+        key="gemini_api_key",
+        placeholder="Cole sua chave do Google AI Studio",
+        help="A chave fica disponível apenas na sessão atual do app.",
+    )
+
+    tem_api_key = bool(st.session_state["gemini_api_key"].strip())
+    if tem_api_key:
+        st.caption("✅ API key carregada. O app está pronto para uso.")
+    else:
+        st.warning("Informe sua API key do Gemini para habilitar o OCR e a correção.")
+
+    st.divider()
     st.subheader("📤 Envie sua imagem")
     imagem_upada = st.file_uploader(
         "Selecione uma imagem (PNG, JPG, JPEG)",
@@ -44,7 +65,12 @@ with st.sidebar:
 
     if imagem_upada:
         st.image(imagem_upada, caption="Imagem carregada", use_container_width=True)
-        iniciar_ocr = st.button("🔍 Iniciar OCR", use_container_width=True, type="primary")
+        iniciar_ocr = st.button(
+            "🔍 Iniciar OCR",
+            use_container_width=True,
+            type="primary",
+            disabled=not tem_api_key,
+        )
     else:
         iniciar_ocr = False
 
@@ -64,7 +90,7 @@ with st.sidebar:
 
 def ocr_gemini(image_bytes: bytes) -> str:
     """Extrai texto manuscrito da imagem usando Gemini 2.5 Flash."""
-    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+    genai.configure(api_key=obter_api_key_gemini())
     model = genai.GenerativeModel("gemini-2.5-flash")
     image = {"mime_type": "image/jpeg", "data": image_bytes}
     response = model.generate_content([
@@ -77,7 +103,7 @@ def ocr_gemini(image_bytes: bytes) -> str:
 
 def corrigir_redacao_enem(texto_redacao: str) -> str:
     """Corrige a redação pelas 5 competências do ENEM usando Gemini 2.5 Flash."""
-    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+    genai.configure(api_key=obter_api_key_gemini())
     model = genai.GenerativeModel("gemini-2.5-flash")
 
     prompt = f"""
@@ -181,7 +207,7 @@ if imagem_upada and iniciar_ocr:
 
 # ── Botão de correção ─────────────────────────────────────────────────────────
 if "texto_ocr" in st.session_state:
-    if st.button("✍️ Corrigir Redação ENEM", type="primary"):
+    if st.button("✍️ Corrigir Redação ENEM", type="primary", disabled=not bool(st.session_state.get("gemini_api_key", "").strip())):
         with st.spinner("📝 Corrigindo redação, aguarde..."):
             try:
                 resultado_correcao = corrigir_redacao_enem(st.session_state["texto_ocr"])
