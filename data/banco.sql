@@ -26,5 +26,6 @@ INSERT INTO redacoes (redacao, C1, C2, C3, C4, C5, nota_final) VALUES
 ('redacao_10.jpg', 80, 80, 80, 80, 80, 400),
 ('redacao_11.jpg', 120, 120, 120, 120, 80, 560),
 ('redacao_12.jpg', 80, 120, 80, 80, 40, 400),
-('redacao_13.jpg', 200, 200, 200, 200, 200, 1000),
+('redacao_13.jpg', 40, 80, 80, 80, 0, 280),
+('redacao_14.jpeg', 200, 200, 200, 200, 200, 1000),
 ('redacao_15.jpg', 200, 200, 200, 200, 200, 1000);

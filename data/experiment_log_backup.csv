@@ -1,0 +1,6 @@
+timestamp,prompt_version,prompt_hash,modelo,n_redacoes,mae_total,mae_c1,mae_c2,mae_c3,mae_c4,mae_c5,pearson_total,acertos_exatos,taxa_acerto_pct,acerto_faixa_pct
+2026-04-26 01:36:27,v1.0-ocr-py-full,3a33b824,gemini-2.5-flash-lite,10,104.0,40.0,32.0,20.0,24.0,32.0,0.4027,1,10.0,40.0
+2026-04-26 11:17:21,v1.0-ocr-py-full,3a33b824,gemini-2.5-flash-lite,10,146.0,40.0,36.0,28.0,24.0,44.0,-0.2629,2,20.0,30.0
+2026-04-26 11:33:25,v1.0-ocr-py-full,3a33b824,gemini-2.5-flash,14,164.29,42.86,37.14,37.14,28.57,37.14,0.4027,1,7.14,28.57
+2026-04-26 12:05:32,v1.0-ocr-py-full,3a33b824,gemini-2.5-pro,14,154.29,45.71,28.57,25.71,20.0,37.14,0.6334,1,7.14,28.57
+2026-04-26 14:50:05,v1.0-ocr-py-full,3a33b824,gemini-2.5-flash,gemini-2.5-flash,15,152.0,50.67,29.33,32.0,32.0,21.33,0.9402,0,0.0,40.0,3.91,14.91,0.0179,0.0012,33488,51454
